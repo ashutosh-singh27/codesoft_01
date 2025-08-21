@@ -1,0 +1,51 @@
+import pandas as pd
+import warnings
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
+warnings.filterwarnings("ignore")
+
+data = pd.read_csv("Titanic.csv")
+
+features = ["Pclass", "Sex", "Age", "SibSp", "Parch", "Fare", "Embarked"]
+data = data[features + ["Survived"]]
+
+data["Age"] = data["Age"].fillna(data["Age"].median())
+data["Embarked"] = data["Embarked"].fillna(data["Embarked"].mode()[0])
+
+le = LabelEncoder()
+data["Sex"] = le.fit_transform(data["Sex"])
+data["Embarked"] = le.fit_transform(data["Embarked"])
+
+X = data[features]
+y = data["Survived"]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+acc = accuracy_score(y_test, y_pred)
+print(f"Model Accuracy: {acc*100:.2f}%")
+
+plt.figure(figsize=(6,4))
+sns.barplot(x="Sex", y="Survived", data=data.replace({"Sex": {0:"male", 1:"female"}}))
+plt.title("Survival Rate by Gender")
+plt.show()
+
+plt.figure(figsize=(6,4))
+sns.barplot(x="Pclass", y="Survived", data=data)
+plt.title("Survival Rate by Passenger Class")
+plt.show()
+
+importances = pd.Series(model.feature_importances_, index=features)
+plt.figure(figsize=(8,5))
+importances.sort_values().plot(kind="barh", color="teal")
+plt.title("Feature Importance (Random Forest)")
+plt.xlabel("Importance Score")
+plt.show()
